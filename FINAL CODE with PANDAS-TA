@@ -1,0 +1,96 @@
+import requests
+import pandas as pd
+import pandas_ta as ta
+import matplotlib.pyplot as plt
+
+def fetch_data(symbol):
+    """Fetch historical data for the given symbol from Binance API."""
+    url = f"https://api.binance.com/api/v3/klines"
+    params = {
+        'symbol': symbol,
+        'interval': '1m',  
+        'limit': 100       
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+    
+    # DataFrame
+    df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_asset_volume', 'number_of_trades', 'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df.set_index('timestamp', inplace=True)
+    df = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
+    return df
+# Bollinger Bands
+def plot_bollinger_bands(df, symbol):
+    """Plot Bollinger Bands for the symbol."""
+    bbands = ta.bbands(df['close'], length=20)
+    plt.figure(figsize=(10, 6))
+    plt.plot(df.index, df['close'], label='Close Price', color='purple', alpha=0.6)
+    plt.plot(df.index, bbands['BBL_20_2.0'], label='Lower Band', color='blue')
+    plt.plot(df.index, bbands['BBM_20_2.0'], label='Middle Band', color='orange')
+    plt.plot(df.index, bbands['BBU_20_2.0'], label='Upper Band', color='green')
+    
+    plt.title(f'Bollinger Bands for {symbol}')
+    plt.legend()
+    plt.show()
+# Moving Average
+def plot_moving_average(df, symbol):
+    """Plot Moving Average for the symbol."""
+    df['MA'] = ta.sma(df['close'], length=20)
+    plt.figure(figsize=(10, 6))
+    plt.plot(df.index, df['MA'], label='Moving Average', color='orange')
+    plt.plot(df.index, df['close'], label='Close', color='purple', alpha=0.5)
+    
+    plt.title(f'Moving Average for {symbol}')
+    plt.legend()
+    plt.show()
+# Volume
+def plot_volume(df, symbol):
+    """Plot Volume for the symbol."""
+    plt.figure(figsize=(10, 6))
+    plt.bar(df.index, df['volume'], width=0.0005, color='gray', alpha=0.75)
+    
+    plt.title(f'Volume for {symbol}')
+    plt.show()
+# MACD
+def plot_macd(df, symbol):
+    """Plot MACD for the symbol."""
+    macd = ta.macd(df['close'])
+    plt.figure(figsize=(10, 6))
+    plt.plot(df.index, macd['MACD_12_26_9'], label='MACD', color='blue')
+    plt.plot(df.index, macd['MACDh_12_26_9'], label='MACD Histogram', color='red')
+    plt.plot(df.index, macd['MACDs_12_26_9'], label='Signal Line', color='green')
+    
+    plt.title(f'MACD for {symbol}')
+    plt.legend()
+    plt.show()
+# RSI
+def plot_rsi(df, symbol):
+    """Plot RSI for the symbol."""
+    rsi = ta.rsi(df['close'], length=14)
+    plt.figure(figsize=(10, 6))
+    plt.plot(df.index, rsi, label='RSI', color='purple')
+    
+    plt.title(f'RSI for {symbol}')
+    plt.legend()
+    plt.show()
+
+def main():
+    symbols = input("Enter the cryptocurrency symbols separated by comma (e.g., BTCUSDT,ETHUSDT): ").split(',')
+    for symbol in symbols:
+        symbol = symbol.strip().upper()
+        print(f"Fetching data for {symbol}...")
+        df = fetch_data(symbol)
+        print(f"Plotting Bollinger Bands for {symbol}...")
+        plot_bollinger_bands(df, symbol)
+        print(f"Plotting Moving Average for {symbol}...")
+        plot_moving_average(df, symbol)
+        print(f"Plotting Volume for {symbol}...")
+        plot_volume(df, symbol)
+        print(f"Plotting MACD for {symbol}...")
+        plot_macd(df, symbol)
+        print(f"Plotting RSI for {symbol}...")
+        plot_rsi(df, symbol)
+
+if __name__ == "__main__":
+    main()
